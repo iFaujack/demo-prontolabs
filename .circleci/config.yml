@@ -42,3 +42,5 @@ jobs:
             bundle exec pronto run -c origin/master -f github_status -f github_pr_review --exit-code
       - store_artifacts:
           path: ./tmp
+workflows:
+  version: 2
