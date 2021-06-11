@@ -1,0 +1,44 @@
+version: 2
+jobs:
+  lint:
+    environment:
+      - BUNDLE_GEMFILE: Gemfile.tools
+    docker:
+      # specify the version you desire here
+      - image: circleci/ruby:2.4.2-stretch-node-browsers
+        environment:
+          RAILS_ENV: test
+          RACK_ENV: test
+
+    working_directory: ~/repo
+
+    steps:
+      - checkout
+      - restore_cache:
+          keys:
+          - v1-tools-dependencies-{{ checksum "Gemfile.tools.lock" }}
+          # fallback to using the latest cache if no exact match is found
+          - v1-tools-dependencies-
+
+      - run:
+          name: install cmake
+          command: |
+            sudo apt-get install cmake
+
+      - run:
+          name: install dependencies
+          command: |
+            bundle check --path vendor/bundle || bundle install --jobs=4 --retry=3 --path vendor/bundle
+
+      - save_cache:
+          paths:
+            - ./vendor/bundle
+          key: v1-tools-dependencies-{{ checksum "Gemfile.tools.lock" }}
+
+
+      - run:
+          name: run source code analysis
+          command: |
+            bundle exec pronto run -c origin/master -f github_status -f github_pr_review --exit-code
+      - store_artifacts:
+          path: ./tmp
